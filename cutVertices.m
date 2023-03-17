@@ -13,7 +13,7 @@ if (~sum(ismember(G.Edges.Properties.VariableNames,'Name')))
     G.Edges.Name = split(Enames);
 end
 
-T = dfsSpanningTree(G, 2);
+T = dfsSpanningTree(G, 3);
 
 K = [];
 
