@@ -81,8 +81,3 @@ while ~isempty(S)
     
 end
 end % end function dfsSpanningTree
-
-
-
-
-

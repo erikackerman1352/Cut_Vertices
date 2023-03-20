@@ -55,7 +55,7 @@ endp = [];
 
 % if S is empty, but in order to be sure all nodes are discovered
 if (isempty(S_new))
-    S_new_2 = [];
+    
     %run a loop across all nodes again
     for j = 1:length(G.Nodes.Name)
         
@@ -79,8 +79,8 @@ if (isempty(S_new))
             
            
             
-        end
-    end
+        
+    
     e_all = [];
     for i = 1:length(endp)
         ns = neighbors(G, endp(i));
@@ -139,9 +139,31 @@ for k = 1:length(S_new)
     
         end
 end
+
+
         
 S_new = setdiff(S_new, undiscoveredS);
+endp = [];
+for k = 1:length(S_new)
+                
+                %extract the endpoints of those edges
+                endpoints = G.Edges.EndNodes(S_new(k),:);
+                endpoints = findnode(G,{endpoints{1} endpoints{2}});
+                
+                %append those nodes into 1 list, and only keep the unique elements of them
+                endp = cat(2, endp, endpoints');
+                endp = unique(endp);
+            end
+            
+            % Find the nodes with the max dfN among those nodes
+            [pre_dfN, pos] = max(G.Nodes.dfN(endp));
+            
+            %Find edge from the node above and the node with the Inf dfN. That
+            newS = outedges(G, endp(pos)); 
+            S_new = setdiff(newS, discoveredS);
 
+        end
+    end
 else
         S_new = S_new;
 
