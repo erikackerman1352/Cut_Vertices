@@ -18,6 +18,10 @@ T = dfsSpanningTree(G, 1);
 
 K = [];
 
+if length(neighbors(T, 1)) >1
+    K(end+1) = [1];
+end
+
 set1 = [];
 set2 = [];
 low = [];
@@ -30,8 +34,9 @@ for i = 2:numnodes(T)
     set2 = cat(2, set2, s2');
 end
     nte = setdiff(set1, set2);
-for i = 2:numnodes(T) 
-    [tf, idx] = ismember(i, T.Nodes.origId);
+if (length(neighbors(T,1))=1)
+    for i = 2:numnodes(T) 
+    
     dfNendp = [];
 
 
@@ -79,8 +84,72 @@ for i = 2:numnodes(T)
     end
             low(i) = min(dfNendp);
 
+    end
 end
 
+if (length(neighbors(T, 1))>1)
+edge = [];
+ns = neighbors(T,1);
+ns_ns = neighbors(G, T.Nodes.origId(ns(1)));
+for i = 1:length(ns_ns)
+    e = outedges(G, ns_ns(i));
+    edge = cat(2, edge, e');
+    edge = unique(edge);
+end
+    newnte = intersect(edge, nte);
+    for i = 2:numnodes(T) 
+    
+    dfNendp = [];
+
+
+    for j = 1:length(newnte)
+        endpoints = G.Edges.EndNodes(newnte(j),:);
+        endpoints = findnode(G,{endpoints{1} endpoints{2}});
+        [tf, idx_1] = ismember(endpoints(1), T.Nodes.origId);
+        [tf, idx_2] = ismember(endpoints(2), T.Nodes.origId);
+        
+        if (T.Nodes.dfN(idx_1) < T.Nodes.dfN(i)) && (T.Nodes.dfN(idx_2) < T.Nodes.dfN(i))
+            e = newnte(j);
+           
+        end
+         if (T.Nodes.dfN(idx_1) > T.Nodes.dfN(i)) && (T.Nodes.dfN(idx_2) > T.Nodes.dfN(i))
+            e = newnte(j);
+%             nte = setdiff(nte, e);
+        end
+        if (T.Nodes.dfN(idx_1) == T.Nodes.dfN(i)) || (T.Nodes.dfN(idx_2) == T.Nodes.dfN(i))
+            if (T.Nodes.dfN(idx_1) == T.Nodes.dfN(idx_2) )
+                dfNendp = [T.Nodes.dfN(i)];
+            elseif (T.Nodes.dfN(idx_1) == T.Nodes.dfN(i))
+                a = T.Nodes.dfN(idx_1);
+                if (T.Nodes.dfN(idx_2) < T.Nodes.dfN(idx_1))
+                    dfNendp(end+1) = [T.Nodes.dfN(idx_2)];
+                elseif (T.Nodes.dfN(idx_2) > T.Nodes.dfN(idx_1))
+                    dfNendp(end+1)  = [T.Nodes.dfN(idx_1)];
+                end
+            elseif (T.Nodes.dfN(idx_2) == T.Nodes.dfN(i))
+                a = T.Nodes.dfN(idx_2);
+                if (T.Nodes.dfN(idx_2) < T.Nodes.dfN(idx_1))
+                    dfNendp(end+1)  = [T.Nodes.dfN(idx_2)];
+                elseif (T.Nodes.dfN(idx_2) > T.Nodes.dfN(idx_1))
+                    dfNendp(end+1)  = [T.Nodes.dfN(idx_1)];
+                end
+            end
+            
+        end
+        if (T.Nodes.dfN(idx_1) > T.Nodes.dfN(i)) && (T.Nodes.dfN(idx_2) < T.Nodes.dfN(i))
+            dfNendp(end+ 1) = [T.Nodes.dfN(idx_2)];
+        end
+        if (T.Nodes.dfN(idx_1) < T.Nodes.dfN(i)) && (T.Nodes.dfN(idx_2) > T.Nodes.dfN(i))
+            dfNendp(end+1) = [T.Nodes.dfN(idx_1)];
+        end
+
+    end
+            low(i) = min(dfNendp);
+
+    end
+
+
+end
 for i = 2:numnodes(T)
     if length(neighbors(T, i)) ==1
         if length(outedges(G, T.Nodes.origId(i))) <2
