@@ -34,6 +34,22 @@ for i = 2:numnodes(T)
     set2 = cat(2, set2, s2');
 end
     nte = setdiff(set1, set2);
+
+newnte = [];
+for j = 1:length(nte)
+    endpoints = G.Edges.EndNodes(nte(j),:);
+        endpoints = findnode(G,{endpoints{1} endpoints{2}});
+        [tf, idx_1] = ismember(endpoints(1), T.Nodes.origId);
+        [tf, idx_2] = ismember(endpoints(2), T.Nodes.origId);
+        if T.Nodes.dfN(idx_1) == T.Nodes.dfN(idx_2)
+            e = nte(j);
+            newnte(end+1) = [e];
+        end
+end
+
+
+nte = setdiff(nte, newnte);
+
 if (length(neighbors(T,1))==1)
     for i = 2:numnodes(T) 
     
@@ -82,9 +98,17 @@ if (length(neighbors(T,1))==1)
         end
 
     end
-            low(i) = min(dfNendp);
+            low(i) = min(dfNendp);     
 
     end
+    for i = 2:numnodes(T)
+    if length(neighbors(T, i)) ==1
+        if length(outedges(G, T.Nodes.origId(i))) <2
+            low(i) = T.Nodes.dfN(i);
+        end
+    end
+    end
+    
 end
 
 if (length(neighbors(T, 1))>1)
@@ -125,7 +149,7 @@ end
         [tf, id] = ismember(leftnode(i), T.Nodes.origId);
         T_leftnode(end+1) = [id];
     end
-    for i = 1:length(T_leftnode)
+for i = 1:length(T_leftnode)
     
     dfNendp = [];
 
@@ -172,13 +196,24 @@ end
         end
 
     end
-            low(T_leftnode(i)) = min(dfNendp);
+    if isempty(dfNendp)
+        low(T_leftnode(i)) = 0;
+    else
+        low(T_leftnode(i)) = min(dfNendp);
 
     end
+    for i = 2:numnodes(T)
+    if length(neighbors(T, i)) ==1
+        if length(outedges(G, T.Nodes.origId(i))) <2
+            low(i) = T.Nodes.dfN(i);
+        end
+    end
+end
+end
     
-    edge = [];
+edge = [];
 ns = neighbors(T,1);
-ns_ns1 = neighbors(G, T.Nodes.origId(ns(1)));
+ns_ns1 = neighbors(G, T.Nodes.origId(ns(2)));
 newns = [];
 for i = 1:length(ns_ns1)
     [tf, idx_1] = ismember(ns_ns1(i), T.Nodes.origId);
@@ -192,25 +227,25 @@ for k = 1:length(newns)
     n = neighbors(T, newns(k));
     newns = cat(2, newns, n');
     newns = unique(newns);
-    leftnode = newns(newns~=1);
+    rightnode = newns(newns~=1);
 end
 
-for i = 1:length(leftnode)
-    e = outedges(T, leftnode(i));
+for i = 1:length(rightnode)
+    e = outedges(T, rightnode(i));
     edge = cat(2, edge, e');
     edge = unique(edge);
 end
 edge2 = [];
-for i = 1:length(leftnode)
-    e = outedges(G, leftnode(i));
+for i = 1:length(rightnode)
+    e = outedges(G, rightnode(i));
     edge2 = cat(2, edge2, e');
     edge2 = unique(edge2);
 end
     edge1 = T.Edges.origId(edge)';
     newnte = setdiff(edge2, edge1);
     T_rightnode = [];
-    for i = 1:length(leftnode)
-        [tf, id] = ismember(leftnode(i), T.Nodes.origId);
+    for i = 1:length(rightnode)
+        [tf, id] = ismember(rightnode(i), T.Nodes.origId);
         T_rightnode(end+1) = [id];
     end
     for i = 1:length(T_rightnode)
@@ -260,26 +295,66 @@ end
         end
 
     end
-            low(T_rightnode(i)) = min(dfNendp);
+            if isempty(dfNendp)
+        low(T_rightnode(i)) = 0;
+    else
+        low(T_rightnode(i)) = min(dfNendp);
 
     end
-
-
+    end
 end
-for i = 2:numnodes(T)
-    if length(neighbors(T, i)) ==1
-        if length(outedges(G, T.Nodes.origId(i))) <2
-            low(i) = T.Nodes.dfN(i);
+
+if length(neighbors(T, 1)) >1
+for i = 2:(numnodes(T)-1)
+    e = outedges(T, i);
+    for j = 1:length(e)
+        idx = T.Edges.EndNodes(e(j),:);
+        idx = findnode(G,{idx{1} idx{2}});
+        [tf, endpoint1] = ismember(idx(1), T.Nodes.origId);
+        [tf, endpoint2] = ismember(idx(2), T.Nodes.origId);
+        if T.Nodes.dfN(endpoints1) == T.Nodes.dfN(i)
+            if T.Nodes.dfN(endpoints2) < T.Nodes.dfN(i)
+            elseif T.Nodes.dfN(endpoints2) > T.Nodes.dfN(i)
+                if(low(endpoints2) >= T.Nodes.dfN(i))
+                    K(end+1) = [T.Nodes.origId(i)];
+                end
+            end
+        elseif T.Nodes.dfN(endpoints2) == T.Nodes.dfN(i)
+            if T.Nodes.dfN(endpoints1) < T.Nodes.dfN(i)
+            elseif T.Nodes.dfN(endpoints1) > T.Nodes.dfN(i)
+                if(low(endpoints1) >= T.Nodes.dfN(i))
+                    K(end+1) = [T.Nodes.origId(i)];
+                end
+            end
+        elseif T.Nodes.dfN(endpoints1) < T.Nodes.dfN(i) || T.Nodes.dfN(endpoints2) < T.Nodes.dfN(i)
+        elseif T.Nodes.dfN(endpoints1) > T.Nodes.dfN(i) || T.Nodes.dfN(endpoints2) > T.Nodes.dfN(i)
+            if T.Nodes.dfN(endpoints2) > T.Nodes.dfN(i)
+                if(low(endpoints2) >= T.Nodes.dfN(i))
+                    K(end+1) = [T.Nodes.origId(i)];
+                end
+            elseif T.Nodes.dfN(endpoints1) > T.Nodes.dfN(i)
+                if(low(endpoints1) >= T.Nodes.dfN(i))
+                    K(end+1) = [T.Nodes.origId(i)];
+                end
+            end
         end
     end
 end
+
+K = unique(K);
+K = K';
+        
+end
+if length(neighbors(T, 1)) == 1
 for i = 2:(numnodes(T)-1)
     if (low(i+1) >= T.Nodes.dfN(i))
         K(end+1) = [T.Nodes.origId(i)];
     end
 end
-
-   
-   
-   
+K = unique(K);
+K = K';
+end
+if isempty(K)
+    K = [];
+end
 end
